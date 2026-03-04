@@ -22,8 +22,18 @@ function buildRequest(urlPath, paramPairs) {
   };
 }
 
+function decodeEntities(str) {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+}
+
 function stripHtml(value) {
-  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return decodeEntities(
+    String(value || '').replace(/<[^>]+>/g, ' ')
+  ).replace(/\s+/g, ' ').trim();
 }
 
 function mapJob(job) {
