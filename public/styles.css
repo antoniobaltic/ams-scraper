@@ -29,6 +29,10 @@ body {
   .search-grid { grid-template-columns: 1fr 1fr; }
   .col-query { grid-column: 1 / -1; }
 }
+@media (max-width: 480px) {
+  .search-grid { grid-template-columns: 1fr; }
+  .col-query { grid-column: auto; }
+}
 
 label { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; font-weight: 600; }
 input, select {
@@ -64,6 +68,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .resultHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .downloads { display: flex; gap: 8px; }
 pre { white-space: pre-wrap; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: .79rem; margin: 0 0 8px; }
+pre a { color: var(--accent); }
 
 #error { color: #b91c1c; }
 
