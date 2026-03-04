@@ -38,7 +38,13 @@ input, select {
   font-size: .9rem;
   background: #fff;
   min-width: 0; /* allows shrinking inside grid */
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px; /* uniform height across input and select */
+  line-height: normal;
 }
+select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+select:disabled { opacity: .45; cursor: not-allowed; background: #f0f2f5; }
 h2 { margin: 0 0 8px; font-size: 1rem; }
 h3 { margin: 0 0 10px; font-size: 1.05rem; }
 .muted { margin: 0 0 8px; color: var(--muted); font-size: .84rem; }

@@ -109,6 +109,7 @@
       }
       thead tr { background: #f1f4f8; }
       th {
+        position: relative;
         border-bottom: 2px solid var(--line);
         padding: 9px 10px;
         text-align: left;
@@ -126,14 +127,33 @@
       th.sorted { color: var(--accent); background: #eef2ff; }
       .sort-icon { margin-left: 4px; opacity: .35; font-style: normal; font-size: .7rem; }
       th.sorted .sort-icon { opacity: 1; }
+
+      /* column resize handle */
+      .col-resize-handle {
+        position: absolute;
+        top: 0; right: 0; bottom: 0;
+        width: 6px;
+        cursor: col-resize;
+        z-index: 1;
+      }
+      .col-resize-handle:hover,
+      .col-resize-handle.dragging { background: var(--accent); opacity: .35; }
+
       td {
         border-bottom: 1px solid #edf0f4;
         padding: 8px 10px;
         text-align: left;
-        vertical-align: middle;
+        vertical-align: top;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+      /* columns that should wrap instead of truncate */
+      td.wrap {
+        white-space: normal;
+        overflow: visible;
+        word-break: break-word;
+        line-height: 1.5;
       }
       tbody tr:last-child td { border-bottom: none; }
       tbody tr { cursor: pointer; }
@@ -161,6 +181,12 @@
         font-weight: 600;
       }
       .desc-btn:hover { text-decoration: underline; }
+
+      /* Link cell – never clip */
+      td.col-url {
+        overflow: visible;
+        white-space: nowrap;
+      }
       td a { color: var(--accent); text-decoration: none; font-weight: 500; }
       td a:hover { text-decoration: underline; }
 
@@ -308,25 +334,30 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script>
       // ─── Column config ──────────────────────────────────────────────────────
+      // 'id' data field is repurposed as sequential row number (#)
       const COL_WIDTHS = {
-        id: 58, title: 230, company: 185, location: 95, state: 125,
-        zip: 58, posted_at: 92, working_time: 85, employment_type: 165,
-        job_offer_type: 105, education: 185, description: 320, url: 70,
+        id: 48, title: 230, company: 185, location: 100, state: 115,
+        zip: 55, posted_at: 92, working_time: 90, employment_type: 155,
+        job_offer_type: 105, education: 175, description: 320, url: 95,
       };
       const LABELS = {
-        id: 'ID', title: 'Titel', company: 'Unternehmen', location: 'Ort',
+        id: '#', title: 'Titel', company: 'Unternehmen', location: 'Ort',
         state: 'Bundesland', zip: 'PLZ', posted_at: 'Datum',
         working_time: 'Arbeitszeit', employment_type: 'Dienstverhältnis',
         job_offer_type: 'Quelle', education: 'Ausbildung',
         description: 'Beschreibung', url: 'Link',
       };
-      const DESC_LIMIT = 300;
-      // Columns excluded from sort (still sortable but less useful; keep all for simplicity)
+      // Columns where text should wrap instead of truncating with "..."
+      const WRAP_COLS = new Set(['title', 'company', 'employment_type', 'education', 'job_offer_type', 'location', 'state']);
       const NO_SORT = new Set(['url']);
+      const DESC_LIMIT = 300;
+
+      // User-adjusted column widths (persists during session)
+      const userColWidths = {};
 
       // ─── State ──────────────────────────────────────────────────────────────
-      let allRows = [];       // raw data from localStorage
-      let displayedRows = []; // after filter + sort (used for drawer lookup)
+      let allRows = [];
+      let displayedRows = [];
       let sortCol = '';
       let sortDir = 'asc';
       let activeRowEl = null;
@@ -336,6 +367,10 @@
         return String(str)
           .replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function colWidth(c) {
+        return userColWidths[c] ?? COL_WIDTHS[c] ?? 110;
       }
 
       // ─── Filter + Sort ──────────────────────────────────────────────────────
@@ -369,7 +404,6 @@
           shown < total ? `${shown} von ${total} Jobs` : '';
 
         renderTable(displayedRows);
-        updateSortHeaders();
       }
 
       // ─── Render ─────────────────────────────────────────────────────────────
@@ -388,7 +422,7 @@
         const cg = document.createElement('colgroup');
         columns.forEach((c) => {
           const col = document.createElement('col');
-          col.style.width = (COL_WIDTHS[c] ?? 110) + 'px';
+          col.style.width = colWidth(c) + 'px';
           cg.appendChild(col);
         });
         table.appendChild(cg);
@@ -411,8 +445,9 @@
         thead.appendChild(headRow);
         table.appendChild(thead);
 
-        // Attach sort click to thead
+        // Sort click on thead
         thead.addEventListener('click', (e) => {
+          if (e.target.closest('.col-resize-handle')) return;
           const th = e.target.closest('th[data-col]');
           if (!th || NO_SORT.has(th.dataset.col)) return;
           const col = th.dataset.col;
@@ -430,14 +465,27 @@
             const td = document.createElement('td');
             const val = String(row[col] ?? '');
 
-            if (col === 'description' && val.length > DESC_LIMIT) {
+            if (col === 'id') {
+              // Sequential row number instead of raw AMS id
+              td.textContent = String(idx + 1);
+              td.style.color = 'var(--muted)';
+              td.style.fontSize = '.75rem';
+            } else if (col === 'description') {
               td.className = 'col-desc';
-              td.innerHTML =
-                `<span class="desc-short">${escHtml(val.slice(0, DESC_LIMIT))}&hellip;</span>` +
-                `<span class="desc-full" style="display:none">${escHtml(val)}</span>` +
-                `<button class="desc-btn" type="button">▾ mehr</button>`;
+              if (val.length > DESC_LIMIT) {
+                td.innerHTML =
+                  `<span class="desc-short">${escHtml(val.slice(0, DESC_LIMIT))}&hellip;</span>` +
+                  `<span class="desc-full" style="display:none">${escHtml(val)}</span>` +
+                  `<button class="desc-btn" type="button">▾ mehr</button>`;
+              } else {
+                td.textContent = val;
+              }
             } else if (col === 'url') {
+              td.className = 'col-url';
               td.innerHTML = `<a href="${escHtml(val)}" target="_blank" rel="noopener noreferrer">Öffnen ↗</a>`;
+            } else if (WRAP_COLS.has(col)) {
+              td.className = 'wrap';
+              td.textContent = val;
             } else {
               td.textContent = val;
             }
@@ -447,7 +495,7 @@
           tbody.appendChild(tr);
         });
 
-        // Row click → drawer (ignore clicks on links and desc-btn)
+        // Row click → drawer (ignore links and desc-btn)
         tbody.addEventListener('click', (e) => {
           if (e.target.closest('a') || e.target.closest('.desc-btn')) return;
           const tr = e.target.closest('tr[data-row-idx]');
@@ -471,6 +519,7 @@
 
         table.appendChild(tbody);
         updateSortHeaders();
+        attachResizeHandles(table);
       }
 
       function updateSortHeaders() {
@@ -483,12 +532,46 @@
         });
       }
 
+      // ─── Column resize ───────────────────────────────────────────────────────
+      function attachResizeHandles(table) {
+        const ths = table.querySelectorAll('thead th');
+        const cols = table.querySelectorAll('col');
+
+        ths.forEach((th, i) => {
+          const handle = document.createElement('div');
+          handle.className = 'col-resize-handle';
+          th.appendChild(handle);
+
+          let startX, startWidth;
+
+          handle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handle.classList.add('dragging');
+            startX = e.pageX;
+            startWidth = cols[i].offsetWidth || (userColWidths[th.dataset.col] ?? COL_WIDTHS[th.dataset.col] ?? 110);
+
+            const onMove = (e) => {
+              const newW = Math.max(40, startWidth + (e.pageX - startX));
+              cols[i].style.width = newW + 'px';
+              userColWidths[th.dataset.col] = newW;
+            };
+            const onUp = () => {
+              handle.classList.remove('dragging');
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          });
+        });
+      }
+
       // ─── Filter input ────────────────────────────────────────────────────────
       document.getElementById('filterInput').addEventListener('input', refresh);
 
       // ─── Drawer ─────────────────────────────────────────────────────────────
       function openDrawer(row, trEl) {
-        // Highlight active row
         if (activeRowEl) activeRowEl.classList.remove('row-active');
         activeRowEl = trEl;
         if (trEl) trEl.classList.add('row-active');
@@ -551,16 +634,12 @@
         const dataRows = rows.map((r) => hs.map((h) => r[h] ?? ''));
 
         const ws = XLSX.utils.aoa_to_sheet([labelRow, ...dataRows]);
-
-        // Auto column widths (sample up to 500 rows for performance)
         ws['!cols'] = hs.map((h, i) => {
           const maxData = dataRows.slice(0, 500).reduce(
             (m, r) => Math.max(m, String(r[i] ?? '').length), 0
           );
           return { wch: Math.min(Math.max(labelRow[i].length, maxData) + 2, 60) };
         });
-
-        // Freeze first row
         ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
         const wb = XLSX.utils.book_new();
@@ -577,10 +656,8 @@
         URL.revokeObjectURL(a.href);
       }
 
-      // CSV downloads allRows (all data, not just filtered)
       document.getElementById('csvBtn').addEventListener('click', () =>
         downloadBlob(toCsv(allRows), 'ams_jobs.csv', 'text/csv;charset=utf-8'));
-
       document.getElementById('xlsxBtn').addEventListener('click', () => buildXlsx(allRows));
       document.getElementById('backBtn').addEventListener('click', () => window.close());
 
@@ -614,7 +691,7 @@
       window.addEventListener('storage', (e) => {
         if (e.key !== 'ams_results' || !e.newValue) return;
         try {
-          closeDrawer(); // indices may shift as rows are added
+          closeDrawer();
           applyData(JSON.parse(e.newValue));
         } catch { /* ignore parse errors */ }
       });

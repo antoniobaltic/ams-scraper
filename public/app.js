@@ -81,8 +81,13 @@ document.querySelector('.layout').addEventListener('change', saveState);
 let acTimeout = null;
 let acActiveIndex = -1;
 
+function updateRadiusState() {
+  document.getElementById('radius').disabled = !locationInput.value.trim();
+}
+
 locationInput.addEventListener('input', () => {
   locationId = ''; // user typing → stored ID is stale
+  updateRadiusState();
   const text = locationInput.value.trim();
   clearTimeout(acTimeout);
   if (text.length < 2) { hideAc(); return; }
@@ -204,7 +209,10 @@ xlsxBtn.addEventListener('click', () => {
 
 // ─── Results tab ──────────────────────────────────────────────────────────────
 
-function openResultsTab() { window.open('/results.html', '_blank'); }
+function openResultsTab() {
+  const w = window.open('/results.html', 'ams_results');
+  if (w) w.focus();
+}
 openResultsBtn.addEventListener('click', openResultsTab);
 
 // ─── Main search ──────────────────────────────────────────────────────────────
@@ -237,8 +245,7 @@ runBtn.addEventListener('click', async () => {
 
   const allRows = [];
   const errors  = [];
-  let totalResults     = 0;
-  let resultsTabOpened = false;
+  let totalResults = 0;
 
   function persistResults(streaming) {
     localStorage.setItem('ams_results', JSON.stringify({
@@ -285,12 +292,6 @@ runBtn.addEventListener('click', async () => {
           allRows.push(...event.rows);
           persistResults(true); // streaming still in progress
 
-          // Open results tab as soon as the first page arrives
-          if (!resultsTabOpened) {
-            resultsTabOpened = true;
-            openResultsTab();
-          }
-
           statusEl.textContent =
             `${allRows.length}` +
             (totalResults ? ` von ${totalResults.toLocaleString('de-AT')}` : '') +
@@ -306,6 +307,7 @@ runBtn.addEventListener('click', async () => {
 
     latestRows = allRows;
     persistResults(false); // mark stream complete
+    openResultsTab();
 
     resultCard.hidden = false;
     document.getElementById('summary').textContent =
@@ -328,3 +330,4 @@ runBtn.addEventListener('click', async () => {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 restoreState();
+updateRadiusState();
