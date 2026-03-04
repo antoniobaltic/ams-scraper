@@ -1,48 +1,50 @@
 # AMS Scraper Studio (Vercel)
 
-Modern minimalist micro‑SaaS web app for scraping Austrian AMS job offers and exporting structured data to CSV + Excel.
+Modernes, minimalistisches Web-Tool zum Scrapen von AMS-Stellenangeboten mit Export nach CSV und Excel.
 
-## Stack
+## Technologie
 
-- **Frontend**: static files in `public/` (high-density, fast UI)
+- **Frontend**: statische Dateien in `public/`
 - **Backend**: Vercel Serverless Function in `api/scrape.js`
-- **Exports**:
-  - CSV generated in browser
-  - Excel (`.xlsx`) generated in browser via SheetJS
+- **Export**:
+  - CSV im Browser erzeugt
+  - Excel (`.xlsx`) im Browser via SheetJS
 
-## Features
+## Funktionen
 
-- Input fields similar to AMS search:
-  - `query`
-  - `location`
-  - `radius`
-- Add arbitrary AMS query parameters (`key=value`) with repeated keys.
-- Crawls AMS result pages and clicks through all found job detail URLs.
-- Extracts structured job data from JSON-LD (`JobPosting`) on detail pages.
-- Preview table + one-click CSV / Excel downloads.
+- Deutsche Eingabemaske mit benutzerfreundlichen Feldern statt Parameterliste.
+- Filterbereiche mit echten UI-Elementen (Checkboxen/Radio-Buttons), angelehnt an AMS:
+  - Quelle der Stellenangebote
+  - Arbeitszeit
+  - Aktualität
+  - Dienstverhältnis
+  - Ausbildung
+- Durchläuft Suchseiten inkl. Pagination und öffnet jede gefundene Detailseite.
+- Extrahiert strukturierte Daten aus JSON-LD (`JobPosting`).
+- Vorschau + Download von CSV und Excel.
 
-## Scraping flow
+## Scraping-Ablauf
 
-1. Build AMS URL from form values + all filter rows.
-2. Load search result page HTML.
-3. Parse job links (`/public/emps/job/...`).
-4. Follow pagination (`rel="next"`, fallback `page+1`).
-5. Fetch each job page and parse `application/ld+json` blocks.
-6. Normalize records and return rows to frontend.
-7. Frontend exports records to CSV and XLSX.
+1. URL aus Suchfeldern + gewählten Filtern erzeugen.
+2. Suchergebnis-Seite laden.
+3. Job-Links (`/public/emps/job/...`) extrahieren.
+4. Pagination folgen (`rel="next"`, sonst `page+1`).
+5. Detailseiten laden und `application/ld+json` auswerten.
+6. Normalisierte Datensätze ans Frontend zurückgeben.
+7. CSV/XLSX im Browser herunterladen.
 
-## Local development
+## Lokal starten
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` (or the URL shown by `vercel dev`).
+Danach im Browser öffnen: `http://localhost:3000` (oder die URL aus `vercel dev`).
 
-## Deploy to Vercel
+## Deployment auf Vercel
 
-1. Install Vercel CLI:
+1. Vercel CLI installieren:
    ```bash
    npm i -g vercel
    ```
@@ -50,17 +52,17 @@ Open `http://localhost:3000` (or the URL shown by `vercel dev`).
    ```bash
    vercel login
    ```
-3. Deploy preview:
+3. Preview-Deployment:
    ```bash
    vercel
    ```
-4. Deploy production:
+4. Produktion:
    ```bash
    vercel --prod
    ```
 
-No environment variables are required.
+Es sind keine Umgebungsvariablen erforderlich.
 
-## Important runtime note
+## Hinweis
 
-If the deployment environment blocks outgoing requests to `https://jobs.ams.at`, the API returns warnings in `errors` and zero results. The UI still works and shows that warning.
+Wenn das Laufzeitumfeld ausgehende Verbindungen zu `https://jobs.ams.at` blockiert, liefert die API entsprechende Hinweise in `errors` und ggf. keine Treffer.

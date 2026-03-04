@@ -125,7 +125,7 @@ async function collectJobs(searchUrl, maxPages, maxJobs) {
       if (allJobLinks.length >= maxJobs) break;
       current = nextLink || nextPageUrl(current);
     } catch (error) {
-      errors.push(`Could not fetch search page ${current}: ${error.message}`);
+      errors.push(`Suchergebnisseite konnte nicht geladen werden ${current}: ${error.message}`);
       break;
     }
   }
@@ -135,7 +135,7 @@ async function collectJobs(searchUrl, maxPages, maxJobs) {
     try {
       jobs.push(await parseJobDetail(link));
     } catch (error) {
-      errors.push(`Failed to parse ${link}: ${error.message}`);
+      errors.push(`Detailseite konnte nicht verarbeitet werden ${link}: ${error.message}`);
     }
   }
 
@@ -144,7 +144,7 @@ async function collectJobs(searchUrl, maxPages, maxJobs) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Methode nicht erlaubt' });
   }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
