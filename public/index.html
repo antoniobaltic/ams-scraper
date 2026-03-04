@@ -10,26 +10,26 @@
     <main class="layout">
       <header class="hero">
         <h1>AMS Scraper Studio</h1>
-        <p>Modernes Micro-SaaS für AMS-Stellenexporte als CSV und Excel.</p>
+        <p>Micro-SaaS für AMS-Stellenexporte als CSV und Excel.</p>
       </header>
 
       <section class="card">
         <h2>Suche</h2>
-        <div class="grid basis-grid">
-          <label>Suche nach<input id="query" placeholder="Beruf, Kompetenz, Unternehmen ..." /></label>
-          <label>Ort<input id="location" placeholder="Ort, PLZ, Bundesland" /></label>
-          <label>Umkreis (km)
+        <div class="grid search-grid">
+          <label class="col-query">Suche nach<input id="query" placeholder="Beruf, Kompetenz, Unternehmen ..." /></label>
+          <label class="col-location">Ort<input id="location" placeholder="Ort, PLZ, Bundesland" /></label>
+          <label class="col-radius">Umkreis (km)
             <select id="radius">
-              <option value="0">Beliebig</option>
               <option value="5">5 km</option>
               <option value="10">10 km</option>
+              <option value="20" selected>20 km</option>
               <option value="25">25 km</option>
               <option value="50">50 km</option>
               <option value="100">100 km</option>
             </select>
           </label>
-          <label>Max. Seiten<input id="maxPages" type="number" min="1" max="100" value="5" /></label>
-          <label>Max. Jobs<input id="maxJobs" type="number" min="1" max="3000" value="200" /></label>
+          <label class="col-pages">Max. Seiten<input id="maxPages" type="number" min="1" max="100" value="5" /></label>
+          <label class="col-jobs">Max. Jobs<input id="maxJobs" type="number" min="1" max="3000" value="200" /></label>
         </div>
       </section>
 
@@ -37,11 +37,9 @@
         <h2>Quelle der Stellenangebote</h2>
         <p class="muted">Zusätzlich zu AMS-Stellenangeboten:</p>
         <div class="option-list">
-          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="SB_WKO" checked /> Unternehmensangebote aus dem AMS eJob-Room</label>
+          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="SB_WKO" checked /> Stellenangebote von Unternehmen aus dem AMS eJob-Room</label>
           <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="IJ" checked /> Stellenangebote aus dem Internet</label>
-          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="BA" checked /> Bundesagentur für Arbeit (DE)</label>
-          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="BZ" checked /> Weitere Partnerbörse</label>
-          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="TN" checked /> Tagesaktuelle Inserate</label>
+          <label class="check"><input type="checkbox" data-filter-key="jobOfferTypes" value="BA" checked /> Stellenangebote von der Bundesagentur für Arbeit (DE)</label>
         </div>
       </section>
 
@@ -68,7 +66,7 @@
         <article class="panel">
           <h3>Dienstverhältnis</h3>
           <div class="option-list">
-            <label class="check"><input type="checkbox" data-filter-key="employmentRelationship" value="AA" /> ArbeiterInnen/Angestellte</label>
+            <label class="check"><input type="checkbox" data-filter-key="employmentRelationship" value="AA" /> Arbeiter:innen/Angestellte</label>
             <label class="check"><input type="checkbox" data-filter-key="employmentRelationship" value="LS" /> Lehrstelle</label>
             <label class="check"><input type="checkbox" data-filter-key="employmentRelationship" value="SS" /> Saisonstelle</label>
             <label class="check"><input type="checkbox" data-filter-key="employmentRelationship" value="FS" /> Ferialstelle</label>
@@ -83,7 +81,7 @@
             <label class="check"><input type="checkbox" data-filter-key="educationLevels" value="M*" /> Berufsbildende mittlere Schule</label>
             <label class="check"><input type="checkbox" data-filter-key="educationLevels" value="L*" /> Lehre/Lehre mit Meisterprüfung</label>
             <label class="check"><input type="checkbox" data-filter-key="educationLevels" value="H*" /> Matura</label>
-            <label class="check"><input type="checkbox" data-filter-key="educationLevels" value="U*" /> Fachhochschule/Universität</label>
+            <label class="check"><input type="checkbox" data-filter-key="educationLevels" value="U*" /> Fachhochschule/Universität/pädagogische Hochschule</label>
           </div>
         </article>
       </section>
