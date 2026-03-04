@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AMS Scraper Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <h1>AMS Scraper Studio</h1>
+        <p>Modern micro-SaaS interface for AMS scraping with CSV + Excel exports.</p>
+      </header>
+
+      <section class="card">
+        <div class="grid">
+          <label>Suche nach<input id="query" placeholder="Beruf, Kompetenz, Unternehmen..." /></label>
+          <label>Ort<input id="location" placeholder="Ort, PLZ, Bundesland" /></label>
+          <label>Umkreis (km)<input id="radius" type="number" min="0" value="0" /></label>
+          <label>Max Seiten<input id="maxPages" type="number" min="1" max="100" value="5" /></label>
+          <label>Max Jobs<input id="maxJobs" type="number" min="1" max="3000" value="200" /></label>
+        </div>
+
+        <h2>AMS Filter (URL-Parameter)</h2>
+        <p class="muted">Parameter exakt wie auf jobs.ams.at setzen. Du kannst denselben Key mehrfach nutzen.</p>
+        <div id="filters"></div>
+        <button id="addFilter" class="ghost" type="button">+ Filter hinzufügen</button>
+
+        <div class="actions">
+          <button id="run" type="button">Scrapen</button>
+          <span id="status"></span>
+        </div>
+      </section>
+
+      <section class="card" id="resultCard" hidden>
+        <div class="resultHead">
+          <h2>Ergebnis</h2>
+          <div class="downloads">
+            <button class="ghost" id="csvBtn" type="button" disabled>CSV Download</button>
+            <button class="ghost" id="xlsxBtn" type="button" disabled>Excel Download</button>
+          </div>
+        </div>
+        <p id="summary"></p>
+        <pre id="searchUrl"></pre>
+        <div id="errors"></div>
+        <div class="tableWrap"><table id="previewTable"></table></div>
+      </section>
+    </main>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
