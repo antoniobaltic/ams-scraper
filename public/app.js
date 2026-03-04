@@ -223,6 +223,10 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   resultCard.hidden = true;
 
+  // Open the results tab now while we still have the user gesture context,
+  // otherwise popup blockers will prevent window.open() after the first await.
+  const resultsWin = window.open('/results.html', 'ams_results');
+
   const query    = document.getElementById('query').value.trim();
   const location = locationInput.value.trim();
   const radius   = document.getElementById('radius').value;
@@ -307,7 +311,7 @@ runBtn.addEventListener('click', async () => {
 
     latestRows = allRows;
     persistResults(false); // mark stream complete
-    openResultsTab();
+    if (resultsWin) resultsWin.focus(); else openResultsTab();
 
     resultCard.hidden = false;
     document.getElementById('summary').textContent =
