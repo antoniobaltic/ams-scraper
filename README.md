@@ -1,44 +1,66 @@
-# AMS Scraper Studio
+# AMS Scraper Studio (Vercel)
 
-Minimal micro-SaaS styled web app that scrapes jobs from the Austrian AMS job portal and exports structured results as CSV + Excel.
+Modern minimalist micro‑SaaS web app for scraping Austrian AMS job offers and exporting structured data to CSV + Excel.
 
-## What this app does
+## Stack
 
-- Recreates AMS search input behavior with:
-  - `query` (job term)
+- **Frontend**: static files in `public/` (high-density, fast UI)
+- **Backend**: Vercel Serverless Function in `api/scrape.js`
+- **Exports**:
+  - CSV generated in browser
+  - Excel (`.xlsx`) generated in browser via SheetJS
+
+## Features
+
+- Input fields similar to AMS search:
+  - `query`
   - `location`
   - `radius`
-  - arbitrary raw AMS URL parameters (`key=value`, including repeated keys)
-- Crawls paginated search result pages.
-- Opens each job detail page and extracts structured job metadata (via JSON-LD `JobPosting` when available).
-- Generates:
-  - CSV export
-  - XLSX export
-- Shows a preview table in the UI.
+- Add arbitrary AMS query parameters (`key=value`) with repeated keys.
+- Crawls AMS result pages and clicks through all found job detail URLs.
+- Extracts structured job data from JSON-LD (`JobPosting`) on detail pages.
+- Preview table + one-click CSV / Excel downloads.
 
-## Scraping strategy (click-through across all pages)
+## Scraping flow
 
-1. Build AMS search URL using user-provided inputs and filters.
-2. Download search result HTML.
-3. Parse all job detail links (`/public/emps/job/...`).
-4. Follow pagination:
-   - Prefer `<a rel="next">` when present.
-   - Fallback to incrementing `page` query parameter.
-5. For every collected detail link:
-   - Fetch detail page
-   - Parse `application/ld+json`
-   - Extract `JobPosting` fields like title, organization, location, date, employment type, description.
-6. Write normalized rows to CSV and XLSX.
+1. Build AMS URL from form values + all filter rows.
+2. Load search result page HTML.
+3. Parse job links (`/public/emps/job/...`).
+4. Follow pagination (`rel="next"`, fallback `page+1`).
+5. Fetch each job page and parse `application/ld+json` blocks.
+6. Normalize records and return rows to frontend.
+7. Frontend exports records to CSV and XLSX.
 
-## Run locally
+## Local development
 
 ```bash
-python3 server.py
+npm install
+npm run dev
 ```
 
-Then open: `http://localhost:8000`
+Open `http://localhost:3000` (or the URL shown by `vercel dev`).
 
-## Notes
+## Deploy to Vercel
 
-- The app uses only Python standard library (no pip install required).
-- If AMS changes HTML structure or parameter names, adjust parser rules in `server.py`.
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
+2. Login:
+   ```bash
+   vercel login
+   ```
+3. Deploy preview:
+   ```bash
+   vercel
+   ```
+4. Deploy production:
+   ```bash
+   vercel --prod
+   ```
+
+No environment variables are required.
+
+## Important runtime note
+
+If the deployment environment blocks outgoing requests to `https://jobs.ams.at`, the API returns warnings in `errors` and zero results. The UI still works and shows that warning.

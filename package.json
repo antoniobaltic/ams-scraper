@@ -1,0 +1,13 @@
+{
+  "name": "ams-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel-hosted AMS scraper micro SaaS",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  }
+}
