@@ -93,7 +93,7 @@ module.exports = async function handler(req, res) {
 
   if (query) baseParamPairs.push(['query', query]);
   if (location) baseParamPairs.push(['location', location]);
-  if (radius && radius !== '0') baseParamPairs.push(['vicinity', radius]);
+  if (location && radius && radius !== '0') baseParamPairs.push(['vicinity', radius]);
 
   const filters = Array.isArray(body.filters) ? body.filters : [];
   for (const filter of filters) {
