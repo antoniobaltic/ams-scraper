@@ -77,7 +77,11 @@ async function fetchPageWithRetry(paramPairs, maxRetries = 4) {
         continue;
       }
       if (!response.ok) {
-        throw new Error(`AMS API Fehler: ${response.status}`);
+        const hints = {
+          400: 'Ungültige Suchanfrage (400) – wahrscheinlich wurde ein Ort eingetippt statt aus der Vorschlagsliste gewählt, oder der Umkreis ist ohne gültigen Ort gesetzt.',
+          401: 'Zugriff verweigert (401) – der interne API-Schlüssel ist abgelaufen oder wurde geändert. Bitte den Betreiber informieren.',
+        };
+        throw new Error(hints[response.status] ?? `AMS API Fehler: ${response.status}`);
       }
       return await response.json();
     } catch (err) {
