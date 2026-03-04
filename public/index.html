@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="layout">
+    <form class="layout" id="scrapeForm">
       <header class="hero">
         <h1>AMS Scraper Studio</h1>
         <p>Micro-SaaS für AMS-Stellenexporte als CSV und Excel.</p>
@@ -92,7 +92,7 @@
       </section>
 
       <section class="card actions-card">
-        <button id="run" type="button">Jetzt suchen &amp; exportieren</button>
+        <button id="run" type="submit">Jetzt suchen &amp; exportieren</button>
         <button id="clear" class="ghost" type="button">Zurücksetzen</button>
         <span id="status"></span>
       </section>
@@ -102,15 +102,15 @@
           <h2>Ergebnis</h2>
           <div class="downloads">
             <button class="ghost" id="openResults" type="button">Tabelle im Browser öffnen ↗</button>
-            <button class="ghost" id="csvBtn" type="button" disabled>CSV</button>
-            <button class="ghost" id="xlsxBtn" type="button" disabled>Excel</button>
+            <button id="csvBtn" type="button" disabled>CSV</button>
+            <button id="xlsxBtn" type="button" disabled>Excel</button>
           </div>
         </div>
         <p id="summary"></p>
         <pre id="searchUrl"></pre>
         <div id="errors"></div>
       </section>
-    </main>
+    </form>
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="/app.js"></script>

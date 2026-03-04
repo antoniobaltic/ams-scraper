@@ -164,8 +164,7 @@ locationInput.addEventListener('keydown', (e) => {
   const items = [...locationList.querySelectorAll('li')];
 
   if (locationList.hidden || !items.length) {
-    if (e.key === 'Enter') runBtn.click();
-    return;
+    return; // let the form's native submit handle Enter
   }
 
   if (e.key === 'ArrowDown') {
@@ -180,7 +179,7 @@ locationInput.addEventListener('keydown', (e) => {
       selectAcItem(items[acActiveIndex]);
     } else {
       hideAc();
-      runBtn.click();
+      document.getElementById('scrapeForm').requestSubmit();
     }
     return;
   } else if (e.key === 'Escape') {
@@ -197,12 +196,6 @@ locationInput.addEventListener('keydown', (e) => {
 // Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.autocomplete-wrap')) hideAc();
-});
-
-// ─── Enter to submit ──────────────────────────────────────────────────────────
-
-document.getElementById('query').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') runBtn.click();
 });
 
 // ─── Downloads ────────────────────────────────────────────────────────────────
@@ -248,7 +241,8 @@ openResultsBtn.addEventListener('click', openResultsTab);
 
 // ─── Main search ──────────────────────────────────────────────────────────────
 
-runBtn.addEventListener('click', async () => {
+document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
   saveState();
   statusEl.textContent = 'Suche läuft …';
   statusEl.className = '';
@@ -350,7 +344,8 @@ runBtn.addEventListener('click', async () => {
     document.getElementById('summary').textContent =
       `${allRows.length} Jobs geladen` +
       (totalResults ? ` (${totalResults.toLocaleString('de-AT')} gesamt gefunden)` : '') + '.';
-    document.getElementById('searchUrl').textContent = searchUrl;
+    document.getElementById('searchUrl').innerHTML =
+      `<a href="${escHtml(searchUrl)}" target="_blank" rel="noopener noreferrer">${escHtml(searchUrl)}</a>`;
     document.getElementById('errors').innerHTML = errors.length
       ? `<p id="error"><strong>Hinweise:</strong> ${errors.join(' · ')}</p>`
       : '';

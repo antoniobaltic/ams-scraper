@@ -298,8 +298,8 @@
       <span class="filter-count" id="filterCount"></span>
       <span class="streaming-badge" id="streamingBadge" hidden>⟳ Lädt …</span>
       <span class="meta" id="metaSummary"></span>
-      <button class="btn ghost" id="csvBtn" disabled>CSV</button>
-      <button class="btn ghost" id="xlsxBtn" disabled>Excel</button>
+      <button class="btn" id="csvBtn" disabled>CSV</button>
+      <button class="btn" id="xlsxBtn" disabled>Excel</button>
       <button class="btn ghost" id="backBtn">← Tab schließen</button>
     </header>
 
@@ -676,10 +676,8 @@
         const urlEl = document.getElementById('searchUrl');
         if (data.search_url) { urlEl.textContent = data.search_url; urlEl.style.display = ''; }
 
-        if (data.errors?.length) {
-          document.getElementById('errors').textContent =
-            'Hinweise: ' + data.errors.join(' · ');
-        }
+        document.getElementById('errors').textContent =
+          data.errors?.length ? 'Hinweise: ' + data.errors.join(' · ') : '';
 
         refresh();
 
