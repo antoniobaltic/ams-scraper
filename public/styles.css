@@ -58,3 +58,34 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 pre { white-space: pre-wrap; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: .79rem; margin: 0 0 8px; }
 
 #error { color: #b91c1c; }
+
+/* ── Location autocomplete ── */
+.autocomplete-wrap { position: relative; width: 100%; }
+.autocomplete-wrap input { width: 100%; }
+.ac-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.ac-list[hidden] { display: none; }
+.ac-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: .88rem;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ac-list li:hover, .ac-list li.ac-active { background: #eef2ff; color: var(--accent); }

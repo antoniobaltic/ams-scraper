@@ -17,7 +17,12 @@
         <h2>Suche</h2>
         <div class="grid search-grid">
           <label class="col-query">Suche nach<input id="query" placeholder="Beruf, Kompetenz, Unternehmen ..." /></label>
-          <label class="col-location">Ort<input id="location" placeholder="Ort, PLZ, Bundesland" /></label>
+          <label class="col-location">Ort
+            <div class="autocomplete-wrap">
+              <input id="location" placeholder="Ort, PLZ, Bundesland" autocomplete="off" />
+              <ul class="ac-list" id="locationList" hidden></ul>
+            </div>
+          </label>
           <label class="col-radius">Umkreis (km)
             <select id="radius">
               <option value="5">5 km</option>

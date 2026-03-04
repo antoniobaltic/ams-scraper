@@ -287,7 +287,8 @@
         allRows = data.rows || [];
 
         document.getElementById('metaSummary').textContent =
-          `${data.job_count ?? allRows.length} Jobs`;
+          `${data.job_count ?? allRows.length} Jobs geladen` +
+          (data.total_results ? ` (${data.total_results.toLocaleString('de-AT')} gesamt gefunden)` : '');
 
         const urlEl = document.getElementById('searchUrl');
         if (data.search_url) {

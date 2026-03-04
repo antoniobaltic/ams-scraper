@@ -1,124 +1,299 @@
+'use strict';
+
 const runBtn = document.getElementById('run');
 const statusEl = document.getElementById('status');
 const resultCard = document.getElementById('resultCard');
 const csvBtn = document.getElementById('csvBtn');
 const xlsxBtn = document.getElementById('xlsxBtn');
 const openResultsBtn = document.getElementById('openResults');
+const locationInput = document.getElementById('location');
+const locationList = document.getElementById('locationList');
 
+let locationId = '';
 let latestRows = [];
 
-function sammleFilter() {
-  const filterMap = new Map();
-  document.querySelectorAll('input[data-filter-key]').forEach((input) => {
-    const key = input.dataset.filterKey;
-    if (!key) return;
-    if (input.type === 'checkbox' && !input.checked) return;
-    if (input.type === 'radio' && !input.checked) return;
-    const value = String(input.value || '').trim();
-    if (!value) return;
-    if (!filterMap.has(key)) filterMap.set(key, []);
-    filterMap.get(key).push(value);
-  });
-  return [...filterMap.entries()].flatMap(([key, values]) => values.map((value) => ({ key, value })));
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function downloadBlob(content, fileName, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
+function sammleFilter() {
+  const map = new Map();
+  document.querySelectorAll('input[data-filter-key]').forEach((el) => {
+    if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+    const v = String(el.value || '').trim();
+    if (!v) return;
+    const k = el.dataset.filterKey;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(v);
+  });
+  return [...map.entries()].flatMap(([k, vs]) => vs.map((v) => ({ key: k, value: v })));
+}
+
+// ─── State persistence ────────────────────────────────────────────────────────
+
+function saveState() {
+  const filterStates = {};
+  document.querySelectorAll('input[data-filter-key]').forEach((el) => {
+    filterStates[`${el.dataset.filterKey}|${el.value}|${el.type}`] = el.checked;
+  });
+  try {
+    localStorage.setItem('ams_search_state', JSON.stringify({
+      query: document.getElementById('query').value,
+      location: locationInput.value,
+      locationId,
+      radius: document.getElementById('radius').value,
+      maxPages: document.getElementById('maxPages').value,
+      maxJobs: document.getElementById('maxJobs').value,
+      filterStates,
+    }));
+  } catch (_) {}
+}
+
+function restoreState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('ams_search_state') || 'null');
+    if (!s) return;
+    if (s.query)    document.getElementById('query').value = s.query;
+    if (s.location) locationInput.value = s.location;
+    if (s.locationId) locationId = s.locationId;
+    if (s.radius)   document.getElementById('radius').value = s.radius;
+    if (s.maxPages) document.getElementById('maxPages').value = s.maxPages;
+    if (s.maxJobs)  document.getElementById('maxJobs').value = s.maxJobs;
+    if (s.filterStates) {
+      document.querySelectorAll('input[data-filter-key]').forEach((el) => {
+        const key = `${el.dataset.filterKey}|${el.value}|${el.type}`;
+        if (key in s.filterStates) el.checked = s.filterStates[key];
+      });
+    }
+  } catch (_) {}
+}
+
+// Persist on any form input/change (event bubbles up to layout)
+document.querySelector('.layout').addEventListener('input', saveState);
+document.querySelector('.layout').addEventListener('change', saveState);
+
+// ─── Location autocomplete ────────────────────────────────────────────────────
+
+let acTimeout = null;
+let acActiveIndex = -1;
+
+locationInput.addEventListener('input', () => {
+  locationId = ''; // user typing → stored ID is stale
+  const text = locationInput.value.trim();
+  clearTimeout(acTimeout);
+  if (text.length < 2) { hideAc(); return; }
+  acTimeout = setTimeout(() => fetchAcSuggestions(text), 300);
+});
+
+async function fetchAcSuggestions(text) {
+  try {
+    const res = await fetch(`/api/location-suggest?text=${encodeURIComponent(text)}`);
+    renderAcList(await res.json());
+  } catch { hideAc(); }
+}
+
+function renderAcList(items) {
+  if (!Array.isArray(items) || !items.length) { hideAc(); return; }
+  acActiveIndex = -1;
+  locationList.innerHTML = items
+    .map((it) =>
+      `<li data-id="${escHtml(it.locationId)}" data-text="${escHtml(it.text)}">${escHtml(it.text)}</li>`)
+    .join('');
+  locationList.hidden = false;
+}
+
+function hideAc() {
+  locationList.hidden = true;
+  locationList.innerHTML = '';
+  acActiveIndex = -1;
+}
+
+function selectAcItem(li) {
+  locationInput.value = li.dataset.text;
+  locationId = li.dataset.id;
+  hideAc();
+  saveState();
+}
+
+locationList.addEventListener('click', (e) => {
+  const li = e.target.closest('li');
+  if (li) selectAcItem(li);
+});
+
+locationInput.addEventListener('keydown', (e) => {
+  const items = [...locationList.querySelectorAll('li')];
+
+  if (locationList.hidden || !items.length) {
+    if (e.key === 'Enter') runBtn.click();
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acActiveIndex = Math.min(acActiveIndex + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acActiveIndex = Math.max(acActiveIndex - 1, -1);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (acActiveIndex >= 0 && items[acActiveIndex]) {
+      selectAcItem(items[acActiveIndex]);
+    } else {
+      hideAc();
+      runBtn.click();
+    }
+    return;
+  } else if (e.key === 'Escape') {
+    hideAc();
+    return;
+  } else {
+    return;
+  }
+
+  items.forEach((li, i) => li.classList.toggle('ac-active', i === acActiveIndex));
+  if (acActiveIndex >= 0) items[acActiveIndex].scrollIntoView({ block: 'nearest' });
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.autocomplete-wrap')) hideAc();
+});
+
+// ─── Enter to submit ──────────────────────────────────────────────────────────
+
+document.getElementById('query').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runBtn.click();
+});
+
+// ─── Downloads ────────────────────────────────────────────────────────────────
+
+function downloadBlob(content, name, type) {
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([content], { type })),
+    download: name,
+  });
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(a.href);
 }
 
 function toCsv(rows) {
   if (!rows.length) return '';
-  const headers = Object.keys(rows[0]);
+  const hs = Object.keys(rows[0]);
   const esc = (v) => {
-    const value = String(v ?? '');
-    if (value.includes('"') || value.includes(',') || value.includes('\n')) {
-      return `"${value.replaceAll('"', '""')}"`;
-    }
-    return value;
+    const s = String(v ?? '');
+    return s.includes('"') || s.includes(',') || s.includes('\n')
+      ? `"${s.replaceAll('"', '""')}"` : s;
   };
-  const lines = [headers.join(',')];
-  rows.forEach((row) => lines.push(headers.map((h) => esc(row[h])).join(',')));
-  return lines.join('\n');
+  return [hs.join(','), ...rows.map((r) => hs.map((h) => esc(r[h])).join(','))].join('\n');
 }
 
-csvBtn.addEventListener('click', () => {
-  downloadBlob(toCsv(latestRows), 'ams_jobs.csv', 'text/csv;charset=utf-8');
-});
+csvBtn.addEventListener('click', () =>
+  downloadBlob(toCsv(latestRows), 'ams_jobs.csv', 'text/csv;charset=utf-8'));
 
 xlsxBtn.addEventListener('click', () => {
   if (!latestRows.length) return;
-  const worksheet = XLSX.utils.json_to_sheet(latestRows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'jobs');
-  XLSX.writeFile(workbook, 'ams_jobs.xlsx');
+  const ws = XLSX.utils.json_to_sheet(latestRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'jobs');
+  XLSX.writeFile(wb, 'ams_jobs.xlsx');
 });
 
-function openResultsTab() {
-  window.open('/results.html', '_blank');
-}
+// ─── Results tab ──────────────────────────────────────────────────────────────
 
+function openResultsTab() { window.open('/results.html', '_blank'); }
 openResultsBtn.addEventListener('click', openResultsTab);
 
+// ─── Main search ──────────────────────────────────────────────────────────────
+
 runBtn.addEventListener('click', async () => {
+  saveState();
   statusEl.textContent = 'Suche läuft …';
   runBtn.disabled = true;
+  resultCard.hidden = true;
+
+  const query    = document.getElementById('query').value.trim();
+  const location = locationInput.value.trim();
+  const radius   = document.getElementById('radius').value;
+  const maxPages = Math.min(Math.max(Number(document.getElementById('maxPages').value), 1), 100);
+  const maxJobs  = Math.min(Math.max(Number(document.getElementById('maxJobs').value), 1), 3000);
+  const filters  = sammleFilter();
 
   const payload = {
-    query: document.getElementById('query').value,
-    location: document.getElementById('location').value,
-    radius: document.getElementById('radius').value,
-    max_pages: Number(document.getElementById('maxPages').value),
-    max_jobs: Number(document.getElementById('maxJobs').value),
-    filters: sammleFilter(),
+    query, location, filters,
+    locationId: locationId || undefined,
+    radius,
   };
 
+  const allRows = [];
+  const errors  = [];
+  let totalPages   = 1;
+  let totalResults = 0;
+
   try {
-    const res = await fetch('/api/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    for (let page = 1; page <= maxPages && allRows.length < maxJobs; page++) {
+      statusEl.textContent = totalPages > 1
+        ? `Seite ${page} von ${Math.min(maxPages, totalPages)} wird geladen …`
+        : `Seite ${page} wird geladen …`;
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Suche fehlgeschlagen');
+      const res  = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, page }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Suche fehlgeschlagen');
 
-    latestRows = data.rows || [];
+      totalPages   = data.totalPages   || 1;
+      totalResults = data.totalResults || 0;
 
-    // Persist to localStorage so results.html (new tab) can read it
+      const slice = (data.rows || []).slice(0, maxJobs - allRows.length);
+      allRows.push(...slice);
+      if (data.errors?.length) errors.push(...data.errors);
+      if (page >= totalPages) break;
+    }
+
+    latestRows = allRows;
+
+    // Build a human-readable search URL
+    const dp = new URLSearchParams({ sortField: '_SCORE' });
+    if (query)            dp.set('query', query);
+    if (location)         dp.set('location', location);
+    if (location && radius) dp.set('vicinity', radius);
+    const searchUrl = `https://jobs.ams.at/public/emps/api/search?${dp}`;
+
+    // Persist for results.html
     localStorage.setItem('ams_results', JSON.stringify({
-      job_count: data.job_count,
-      search_url: data.search_url,
-      errors: data.errors || [],
-      rows: latestRows,
+      job_count: allRows.length,
+      total_results: totalResults,
+      search_url: searchUrl,
+      errors,
+      rows: allRows,
     }));
 
     resultCard.hidden = false;
     document.getElementById('summary').textContent =
-      `${data.job_count} Jobs gefunden.`;
-    document.getElementById('searchUrl').textContent = data.search_url;
+      `${allRows.length} Jobs geladen` +
+      (totalResults ? ` (${totalResults.toLocaleString('de-AT')} gesamt gefunden)` : '') + '.';
+    document.getElementById('searchUrl').textContent = searchUrl;
+    document.getElementById('errors').innerHTML = errors.length
+      ? `<p id="error"><strong>Hinweise:</strong> ${errors.join(' · ')}</p>`
+      : '';
 
-    const errorsEl = document.getElementById('errors');
-    errorsEl.innerHTML = '';
-    if (data.errors?.length) {
-      errorsEl.innerHTML =
-        `<p id="error"><strong>Hinweise:</strong><br>${data.errors.join('<br>')}</p>`;
-    }
-
-    csvBtn.disabled = latestRows.length === 0;
-    xlsxBtn.disabled = latestRows.length === 0;
+    csvBtn.disabled  = !allRows.length;
+    xlsxBtn.disabled = !allRows.length;
     statusEl.textContent = 'Fertig.';
 
-    // Auto-open results in new tab
     openResultsTab();
-  } catch (error) {
-    statusEl.textContent = `Fehler: ${error.message}`;
+  } catch (err) {
+    statusEl.textContent = `Fehler: ${err.message}`;
   } finally {
     runBtn.disabled = false;
   }
 });
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+restoreState();
