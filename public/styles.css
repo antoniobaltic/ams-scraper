@@ -68,9 +68,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #c9d2dd;
-  background: #fff;
-  color: var(--text);
+  border: 1px solid #1f58d3;
+  background: var(--accent);
+  color: #fff;
   padding: 7px 12px;
   border-radius: 8px;
   font-weight: 650;
@@ -78,7 +78,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-size: .84rem;
   white-space: nowrap;
 }
-.link-btn:hover { border-color: #b7c2d0; background: #f8fafc; }
+.link-btn:hover { opacity: .9; }
 .actions-card { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 #status { color: var(--muted); font-size: .9rem; }
 #status.error { color: #b91c1c; font-weight: 600; }
