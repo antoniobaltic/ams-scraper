@@ -189,3 +189,8 @@ pre a { color: var(--accent); }
 .faq-card p + p { margin-top: 8px; }
 .faq-list { margin: 0; padding-left: 18px; color: #1c2836; line-height: 1.6; }
 .faq-list li + li { margin-top: 4px; }
+.site-footer {
+  font-size: .78rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
